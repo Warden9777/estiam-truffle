@@ -1,5 +1,5 @@
-// contracts/Donation.sol
-pragma solidity ^0.8.0;
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.5.0;
 
 contract Donation {
     struct DonationStruct {
@@ -9,25 +9,28 @@ contract Donation {
         uint timestamp;
     }
 
-    DonationStruct[] public donations;
-    mapping (address => uint[]) public donateurToDonations;
+    event DonationCreated(uint id, address donateur, uint montant, uint timestamp);
 
-    function createDonation(uint _montant) public {
-        DonationStruct memory newDonation = DonationStruct(
-            donations.length,
-            msg.sender,
-            _montant,
-            block.timestamp
-        );
-        donations.push(newDonation);
-        donateurToDonations[msg.sender].push(newDonation.id);
+    mapping(uint => DonationStruct) public donations;
+    mapping(address => uint[]) public donateurToDonations;
+    uint public donationCount;
+
+    function createDonation() public payable {
+        require(msg.value > 0, "Le montant de la donation doit être supérieur à 0");
+
+        donationCount++;
+        donations[donationCount] = DonationStruct(donationCount, msg.sender, msg.value, now);
+        donateurToDonations[msg.sender].push(donationCount);
+
+        emit DonationCreated(donationCount, msg.sender, msg.value, now);
     }
 
-    function getDonations() public view returns (DonationStruct[] memory) {
-        return donations;
+    function getDonation(uint _id) public view returns (uint, address, uint, uint) {
+        DonationStruct storage donation = donations[_id];
+        return (donation.id, donation.donateur, donation.montant, donation.timestamp);
     }
 
-    function getDonateurDonations(address _donateur) public view returns (uint[] memory) {
+    function getDonationsByDonateur(address _donateur) public view returns (uint[] memory) {
         return donateurToDonations[_donateur];
     }
 }
